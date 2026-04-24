@@ -170,19 +170,20 @@ function inferReps(label = '') {
   return match ? Number(match[1]) : 10
 }
 
-function progress(task: WorkoutTask) {
+function progress(task: WorkoutTask): number {
+  if (task.steps.length === 0) return 0
   const done = task.steps.filter((step) => step.completed).length
   return Math.round((done / task.steps.length) * 100)
 }
 
-function isTaskCompleted(task: WorkoutTask) {
-  return progress(task) === 100
+function isTaskCompleted(task: WorkoutTask): boolean {
+  return task.steps.length > 0 && task.steps.every((step) => step.completed)
 }
 
-function eachDay(start: Date, end: Date) {
+function eachDay(start: Date, end: Date): Date[] {
   const days: Date[] = []
   let current = start
-  while (current <= end) {
+  while (current.getTime() <= end.getTime()) {
     days.push(current)
     current = addDays(current, 1)
   }
@@ -200,15 +201,17 @@ function App() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [state])
 
+  // Derive defaults once so hasUnsavedChanges never silently drifts from initialFormState
+  const defaultForm = useMemo(() => initialFormState(), [])
   const hasUnsavedChanges =
     form.title.trim().length > 0 ||
     form.description.trim().length > 0 ||
     form.notes.trim().length > 0 ||
-    form.date !== format(new Date(), 'yyyy-MM-dd') ||
-    form.category !== 'Сила' ||
-    form.intensity !== 'Середня' ||
-    form.repsPerSet !== '50' ||
-    form.setCount !== '3'
+    form.date !== defaultForm.date ||
+    form.category !== defaultForm.category ||
+    form.intensity !== defaultForm.intensity ||
+    form.repsPerSet !== defaultForm.repsPerSet ||
+    form.setCount !== defaultForm.setCount
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -226,12 +229,25 @@ function App() {
     [state.tasks],
   )
 
-  const today = new Date()
-  const tomorrow = addDays(today, 1)
-  const todayTasks = tasksSorted.filter((task) => isSameDay(parseISO(task.scheduledFor), today))
-  const tomorrowTasks = tasksSorted.filter((task) => isSameDay(parseISO(task.scheduledFor), tomorrow))
-  const weekRange = eachDay(startOfWeek(today, { weekStartsOn: 1 }), endOfWeek(today, { weekStartsOn: 1 }))
-  const monthRange = eachDay(startOfMonth(today), endOfMonth(today))
+  // Memoize date-derived values — these were recreated on every render including keystrokes
+  const today = useMemo(() => new Date(), [])
+  const tomorrow = useMemo(() => addDays(today, 1), [today])
+  const todayTasks = useMemo(
+    () => tasksSorted.filter((task) => isSameDay(parseISO(task.scheduledFor), today)),
+    [tasksSorted, today],
+  )
+  const tomorrowTasks = useMemo(
+    () => tasksSorted.filter((task) => isSameDay(parseISO(task.scheduledFor), tomorrow)),
+    [tasksSorted, tomorrow],
+  )
+  const weekRange = useMemo(
+    () => eachDay(startOfWeek(today, { weekStartsOn: 1 }), endOfWeek(today, { weekStartsOn: 1 })),
+    [today],
+  )
+  const monthRange = useMemo(
+    () => eachDay(startOfMonth(today), endOfMonth(today)),
+    [today],
+  )
 
   const weeklySeries = weekRange.map((date) => {
     const dayTasks = state.tasks.filter((task) => isSameDay(parseISO(task.scheduledFor), date))
@@ -349,7 +365,8 @@ function App() {
       description:
         form.description.trim() || `${form.title.trim()} · ${sets} підходи по ${reps} ${unit}.`,
       intensity: form.intensity,
-      color: CATEGORY_COLORS[state.tasks.length % CATEGORY_COLORS.length],
+      // Derive color from category so it matches PieChart Cell colors
+      color: CATEGORY_COLORS[CATEGORIES.indexOf(form.category) % CATEGORY_COLORS.length] ?? CATEGORY_COLORS[0]!,
       scheduledFor: form.date,
       notes: form.notes.trim(),
       repsPerSet: reps,
@@ -456,14 +473,14 @@ function DashboardPage({
           <div className="glass-panel rounded-[32px] p-4 sm:p-5">
             <div className="flex min-h-[78vh] flex-col gap-4">
               <div className="flex items-center justify-between gap-3 px-1">
-                <TaskViewSwitch taskView={taskView} setTaskView={setTaskView} />
+                <TaskViewSwitch taskView={taskView} onViewChange={setTaskView} />
                 <div className="text-sm text-white/45">{visibleTasks.length} шт.</div>
               </div>
 
               <div className="grid gap-3">
                 {visibleTasks.length > 0 ? (
-                  visibleTasks
-                    .slice()
+                  // tasksSorted is already sorted by date; sort here by progress (incomplete first)
+                  [...visibleTasks]
                     .sort((a, b) => progress(a) - progress(b))
                     .map((task) => (
                       <TaskRow key={task.id} task={task} actionHandlers={actionHandlers} />
@@ -497,8 +514,7 @@ function DashboardPage({
               <div className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-white/52">Завтрашні задачі</div>
               <div className="grid gap-3">
                 {tomorrowTasks.length > 0 ? (
-                  tomorrowTasks
-                    .slice()
+                  [...tomorrowTasks]
                     .sort((a, b) => progress(a) - progress(b))
                     .map((task) => <TaskRow key={`tomorrow-${task.id}`} task={task} actionHandlers={actionHandlers} compact />)
                 ) : (
@@ -806,10 +822,11 @@ function TaskRow({
 
 function TaskViewSwitch({
   taskView,
-  setTaskView,
+  onViewChange,
 }: {
   taskView: 'today' | 'tomorrow'
-  setTaskView: Dispatch<SetStateAction<'today' | 'tomorrow'>>
+  // Plain callback — no React internals leaking into child props
+  onViewChange: (view: 'today' | 'tomorrow') => void
 }) {
   return (
     <div className="relative inline-grid grid-cols-2 rounded-full border border-white/10 bg-black/18 p-1">
@@ -821,7 +838,7 @@ function TaskViewSwitch({
       />
       <button
         type="button"
-        onClick={() => setTaskView('today')}
+        onClick={() => onViewChange('today')}
         className={`relative z-10 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
           taskView === 'today' ? 'text-[#07110c]' : 'text-white/72'
         }`}
@@ -830,7 +847,7 @@ function TaskViewSwitch({
       </button>
       <button
         type="button"
-        onClick={() => setTaskView('tomorrow')}
+        onClick={() => onViewChange('tomorrow')}
         className={`relative z-10 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
           taskView === 'tomorrow' ? 'text-[#07110c]' : 'text-white/72'
         }`}
@@ -1003,6 +1020,7 @@ function CompletedTaskActions({
         </button>
         <button
           type="button"
+          aria-label="Запланувати задачу на завтра"
           onClick={(event) => {
             event.preventDefault()
             event.stopPropagation()
