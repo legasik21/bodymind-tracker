@@ -1,0 +1,24 @@
+services:
+  my-fitness:
+    image: nginx:1.29-alpine
+    container_name: my-fitness
+    restart: unless-stopped
+    volumes:
+      - ./deploy:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.my-fitness.entrypoints=websecure
+      - traefik.http.routers.my-fitness.rule=Host(`cyberskill.online`) && PathPrefix(`/my-fitness`)
+      - traefik.http.routers.my-fitness.tls=true
+      - traefik.http.routers.my-fitness.tls.certresolver=letsencrypt
+      - traefik.http.routers.my-fitness.middlewares=my-fitness-strip@docker,default-security-headers@file
+      - traefik.http.middlewares.my-fitness-strip.stripprefix.prefixes=/my-fitness
+      - traefik.http.services.my-fitness.loadbalancer.server.port=80
+
+networks:
+  traefik-public:
+    external: true
