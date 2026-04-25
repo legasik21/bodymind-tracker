@@ -1,4 +1,4 @@
-import { useMemo, type Dispatch, type SetStateAction, type FormEvent } from 'react'
+import { useMemo } from 'react'
 import {
   Activity,
   BarChart3,
@@ -19,9 +19,10 @@ import {
 } from 'recharts'
 import { addDays, format, isSameDay, parseISO, startOfMonth, startOfWeek, endOfMonth, endOfWeek } from 'date-fns'
 import { uk } from 'date-fns/locale'
-import { type WorkoutTask, type TaskFormState, type TaskActions } from '../types/workout'
+import { type WorkoutTask, type TaskActions, type Dispatch, type SetStateAction } from '../types/workout'
 import { CATEGORIES, CATEGORY_COLORS } from '../constants/categories'
 import { progress, isTaskCompleted, eachDay } from '../lib/workoutUtils'
+import { useCreateTaskModal } from '../hooks/useCreateTaskModal'
 import TaskRow from '../components/TaskRow'
 import TaskViewSwitch from '../components/TaskViewSwitch'
 import MetricPanel from '../components/MetricPanel'
@@ -37,17 +38,8 @@ interface DashboardPageProps {
   monthlyCompleted: number
   monthRange: Date[]
   categoryData: { name: string; value: number }[]
-  isCreateOpen: boolean
-  showDiscardPrompt: boolean
-  form: TaskFormState
-  setForm: Dispatch<React.SetStateAction<TaskFormState>>
-  setIsCreateOpen: Dispatch<SetStateAction<boolean>>
-  requestCloseModal: () => void
-  setShowDiscardPrompt: Dispatch<SetStateAction<boolean>>
-  resetForm: () => void
-  createTask: (event: FormEvent<HTMLFormElement>) => void
   actionHandlers: TaskActions
-  hasUnsavedChanges: boolean
+  onTaskCreate: (task: WorkoutTask) => void
 }
 
 export default function DashboardPage({
@@ -60,18 +52,22 @@ export default function DashboardPage({
   monthlyCompleted,
   monthRange,
   categoryData,
-  isCreateOpen,
-  showDiscardPrompt,
-  form,
-  setForm,
-  setIsCreateOpen,
-  requestCloseModal,
-  setShowDiscardPrompt,
-  resetForm,
-  createTask,
   actionHandlers,
-  hasUnsavedChanges,
+  onTaskCreate,
 }: DashboardPageProps) {
+  const {
+    isCreateOpen,
+    showDiscardPrompt,
+    form,
+    setForm,
+    setIsCreateOpen,
+    requestCloseModal,
+    setShowDiscardPrompt,
+    resetForm,
+    createTask,
+    hasUnsavedChanges,
+  } = useCreateTaskModal(onTaskCreate)
+
   const visibleTasks = taskView === 'today' ? todayTasks : tomorrowTasks
 
   return (
