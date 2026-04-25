@@ -1,14 +1,13 @@
-import { addDays, format, parseISO } from 'date-fns'
-import { uk } from 'date-fns/locale'
-import { type AppState, type WorkoutTask, type TaskFormState } from '../types/workout'
+import { addDays, format } from 'date-fns'
+import type { AppState, WorkoutTask } from '../types/workout'
 import { STORAGE_KEY } from '../constants/categories'
 
-export function initialFormState(): TaskFormState {
+export function initialFormState() {
   return {
     title: '',
     category: 'Сила',
     description: '',
-    intensity: 'Середня',
+    intensity: 'Середня' as const,
     date: format(new Date(), 'yyyy-MM-dd'),
     repsPerSet: '50',
     setCount: '3',
@@ -73,13 +72,23 @@ export const initialState: AppState = {
   ],
 }
 
+export function isAppState(value: unknown): value is AppState {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'tasks' in value &&
+    Array.isArray((value as { tasks: unknown }).tasks)
+  )
+}
+
 export function loadState(): AppState {
   if (typeof window === 'undefined') return initialState
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return initialState
-    const parsed = JSON.parse(raw) as AppState
+    const parsed: unknown = JSON.parse(raw)
+    if (!isAppState(parsed)) return initialState
     return {
       tasks: parsed.tasks.map((task) => ({
         ...task,
