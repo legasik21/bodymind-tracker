@@ -53,7 +53,7 @@ export function useCreateTaskModal(onTaskCreate?: (task: WorkoutTask) => void) {
       repsPerSet: reps,
       setCount: sets,
       steps: Array.from({ length: sets }, (_, index) => ({
-        id: `step-${index + 1}`,
+        id: `step-${crypto.randomUUID()}`,
         label: `Підхід ${index + 1} · ${reps} ${unit}`,
         completed: false,
       })),

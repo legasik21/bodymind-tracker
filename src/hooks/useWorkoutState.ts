@@ -68,7 +68,7 @@ export function useWorkoutState() {
         description:
           source.description || `${source.title} · ${source.setCount} підходи по ${source.repsPerSet} ${unit}.`,
         steps: Array.from({ length: source.setCount }, (_, index) => ({
-          id: `step-${index + 1}`,
+          id: `step-${crypto.randomUUID()}`,
           label: `Підхід ${index + 1} · ${source.repsPerSet} ${unit}`,
           completed: false,
         })),
