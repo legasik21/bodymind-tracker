@@ -9,23 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import TaskPage from './pages/TaskPage'
 
 export default function App() {
-  const {
-    state,
-    tasksSorted,
-    isCreateOpen,
-    showDiscardPrompt,
-    form,
-    setForm,
-    setIsCreateOpen,
-    requestCloseModal,
-    setShowDiscardPrompt,
-    resetForm,
-    taskView,
-    setTaskView,
-    toggleStep,
-    actionHandlers,
-    hasUnsavedChanges,
-  } = useWorkoutState()
+  const { state, tasksSorted, taskView, setTaskView, toggleStep, addTask, actionHandlers } = useWorkoutState()
 
   const today = useMemo(() => new Date(), [])
   const tomorrow = useMemo(() => addDays(today, 1), [today])
@@ -92,17 +76,8 @@ export default function App() {
             monthlyCompleted={monthlyCompleted}
             monthRange={monthRange}
             categoryData={categoryData}
-            isCreateOpen={isCreateOpen}
-            showDiscardPrompt={showDiscardPrompt}
-            form={form}
-            setForm={setForm}
-            setIsCreateOpen={setIsCreateOpen}
-            requestCloseModal={requestCloseModal}
-            setShowDiscardPrompt={setShowDiscardPrompt}
-            resetForm={resetForm}
-            createTask={createTask}
             actionHandlers={actionHandlers}
-            hasUnsavedChanges={hasUnsavedChanges}
+            onTaskCreate={addTask}
           />
         }
       />
