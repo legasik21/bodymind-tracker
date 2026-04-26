@@ -39,6 +39,7 @@ interface DashboardPageProps {
   monthRange: Date[]
   categoryData: { name: string; value: number }[]
   actionHandlers: TaskActions
+  isLoading: boolean
   onTaskCreate: (task: WorkoutTask) => void
 }
 
@@ -53,6 +54,7 @@ export default function DashboardPage({
   monthRange,
   categoryData,
   actionHandlers,
+  isLoading,
   onTaskCreate,
 }: DashboardPageProps) {
   const {
@@ -66,7 +68,7 @@ export default function DashboardPage({
     resetForm,
     createTask,
     hasUnsavedChanges,
-  } = useCreateTaskModal(onTaskCreate)
+  } = useCreateTaskModal({ taskView, onTaskCreate })
 
   const visibleTasks = taskView === 'today' ? todayTasks : tomorrowTasks
 
@@ -88,6 +90,10 @@ export default function DashboardPage({
                     .map((task) => (
                       <TaskRow key={task.id} task={task} actionHandlers={actionHandlers} />
                     ))
+                ) : isLoading ? (
+                  <div className="flex min-h-[220px] items-center justify-center rounded-[26px] border border-dashed border-white/10 bg-black/14 px-5 py-8">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+                  </div>
                 ) : (
                   <div className="flex min-h-[220px] items-center justify-center rounded-[26px] border border-dashed border-white/10 bg-black/14 px-5 py-8 text-center text-sm text-white/58">
                     {taskView === 'today'

@@ -9,7 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import TaskPage from './pages/TaskPage'
 
 export default function App() {
-  const { state, tasksSorted, taskView, setTaskView, toggleStep, addTask, actionHandlers } = useWorkoutState()
+  const { state, tasksSorted, taskView, setTaskView, toggleStep, addTask, actionHandlers, isLoading } = useWorkoutState()
 
   const today = useMemo(() => new Date(), [])
   const tomorrow = useMemo(() => addDays(today, 1), [today])
@@ -77,6 +77,7 @@ export default function App() {
             monthRange={monthRange}
             categoryData={categoryData}
             actionHandlers={actionHandlers}
+            isLoading={isLoading}
             onTaskCreate={addTask}
           />
         }

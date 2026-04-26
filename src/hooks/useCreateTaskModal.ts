@@ -1,13 +1,19 @@
 import { useState, useMemo, type FormEvent } from 'react'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import { type TaskFormState, type WorkoutTask } from '../types/workout'
 import { CATEGORIES, CATEGORY_COLORS } from '../constants/categories'
 import { initialFormState } from '../lib/storage'
 
-export function useCreateTaskModal(onTaskCreate?: (task: WorkoutTask) => void) {
+interface UseCreateTaskModalOptions {
+  taskView?: 'today' | 'tomorrow'
+  onTaskCreate?: (task: WorkoutTask) => void
+}
+
+export function useCreateTaskModal({ taskView = 'today', onTaskCreate }: UseCreateTaskModalOptions = {}) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [showDiscardPrompt, setShowDiscardPrompt] = useState(false)
-  const [form, setForm] = useState<TaskFormState>(() => initialFormState())
+  const initialDate = taskView === 'tomorrow' ? format(addDays(new Date(), 1), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+  const [form, setForm] = useState<TaskFormState>(() => ({ ...initialFormState(), date: initialDate }))
 
   const defaultForm = useMemo(() => initialFormState(), [])
   const hasUnsavedChanges =
