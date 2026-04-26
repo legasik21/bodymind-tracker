@@ -12,11 +12,10 @@ services:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
       - traefik.http.routers.my-fitness.entrypoints=websecure
-      - traefik.http.routers.my-fitness.rule=Host(`cyberskill.online`) && PathPrefix(`/my-fitness`)
+      - traefik.http.routers.my-fitness.rule=Host(`cyberskill.online`)
       - traefik.http.routers.my-fitness.tls=true
       - traefik.http.routers.my-fitness.tls.certresolver=letsencrypt
-      - traefik.http.routers.my-fitness.middlewares=my-fitness-strip@docker,default-security-headers@file
-      - traefik.http.middlewares.my-fitness-strip.stripprefix.prefixes=/my-fitness
+      - traefik.http.routers.my-fitness.middlewares=default-security-headers@file
       - traefik.http.services.my-fitness.loadbalancer.server.port=80
 
 networks:
